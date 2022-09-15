@@ -1,0 +1,42 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+import sys
+import os
+
+def lambda_handler(event, context):
+
+ s3_bucket = os.environ['s3_bucket'] 
+ s3_prefix_input = os.environ['inp_prefix']
+ s3_prefix_output = os.environ['out_prefix']
+ aws_region = os.environ['AWS_REGION'] 
+ aws_access_key_id = 'AKIAZUPWUEUNJTF3JU5F'
+ aws_secret_access_key = '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'
+ session_token = os.environ['AWS_SESSION_TOKEN']
+ xpto= os.environ['XPTO']
+
+ input_path = f's3a://{s3_bucket}/{s3_prefix_input}'
+ output_path = f's3a://{s3_bucket}/{s3_prefix_output}'
+
+ print(xpto) 
+ print(input_path)
+ print(aws_access_key_id)
+ print(aws_secret_access_key)
+
+ spark = SparkSession.builder \
+ .appName("cda-spark-delta-demo") \
+ .master("local[*]") \
+ .config("spark.driver.bindAddress", "127.0.0.1") \
+ .config("spark.hadoop.fs.s3a.access.key", aws_access_key_id) \
+ .config("spark.hadoop.fs.s3a.secret.key", aws_secret_access_key) \
+ .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+ .getOrCreate()
+
+ # .config("spark.hadoop.fs.s3a.session.token",session_token) \
+ # .config("spark.hadoop.fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider") \
+ 
+ print("***************start***********")
+ a = str(spark.sparkContext.version)
+ df = spark.read.format('csv').option('header','true').option('inferSchema','true').load('%s' % input_path)
+ df.show()
+ spark.stop()
+ return a
